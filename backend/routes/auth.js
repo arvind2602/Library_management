@@ -1,7 +1,7 @@
 import express from 'express';
 import pool from '../utils/db.js';
 import Joi from 'joi';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 
 const AuthRouter = express.Router();
 
@@ -11,13 +11,20 @@ AuthRouter.post('/register', async (req, res) => {
         password: Joi.string().min(4).max(255).required(),
         role: Joi.string().min(3).max(255).required()
     });
+
     const { error } = schema.validate(req.body);
     if (error) {
         return res.status(400).json({ error: error.details[0].message });
     }
 
+    const { username, password, role } = req.body;
+
     try {
-        const { username, password, role } = req.body;
+        // Check if the user already exists
+        const userExist = await pool.query("SELECT * FROM users WHERE username = $1", [username]);
+        if (userExist.rows.length > 0) {
+            return res.status(400).json({ error: 'User already exists' });
+        }
 
         // Hash the password
         const salt = await bcrypt.genSalt(10);
@@ -28,7 +35,6 @@ AuthRouter.post('/register', async (req, res) => {
             [username, hashedPassword, role]
         );
 
-        // Consistent response structure
         res.status(201).json({ message: 'User registered successfully', user: newUser.rows[0] });
     } catch (error) {
         console.error(error.message);
@@ -36,32 +42,36 @@ AuthRouter.post('/register', async (req, res) => {
     }
 });
 
-
-
 // Login route
 AuthRouter.post('/login', async (req, res) => {
     const schema = Joi.object({
         username: Joi.string().min(3).max(255).required(),
         password: Joi.string().min(4).max(255).required()
     });
+
     const { error } = schema.validate(req.body);
     if (error) {
-        return res.status(400).json(error.details[0].message);
+        return res.status(400).json({ error: error.details[0].message });
     }
 
-    // Check if user exists
-    const userExist = await pool.query("SELECT * FROM users WHERE username = $1", [req.body.username]);
-    if (userExist.rows.length === 0) {
-        return res.status(401).json('User does not exist');
-    }
+    const { username, password } = req.body;
 
     try {
-        const { username, password } = req.body;
-        const user = await pool.query("SELECT * FROM users WHERE username = $1 AND password = $2", [username, password]);
-        if (user.rows.length === 0) {
-            return res.status(401).json('Invalid Credential');
+        // Check if user exists
+        const userExist = await pool.query("SELECT * FROM users WHERE username = $1", [username]);
+        if (userExist.rows.length === 0) {
+            return res.status(401).json({ error: 'User does not exist' });
         }
-        res.json(user.rows[0]);
+
+        const user = userExist.rows[0];
+
+        // Compare passwords
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+        const { password: _, ...userData } = user; 
+        res.json({ message: 'Login successful', user: userData });
     } catch (error) {
         console.error(error.message);
         return res.status(500).json({ error: 'Server Error', details: error.message });
