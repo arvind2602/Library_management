@@ -8,10 +8,38 @@ datasource db {
 }
 
 model users {
-  id         Int       @id @default(autoincrement())
+  user_id    Int       @id @default(autoincrement())
   username   String    @unique
   password   String    @default("")
-  role       String    
+  role       String
   created_at DateTime  @default(now())
   updated_at DateTime? @updatedAt
+
+  @@index([role], name: "role")
+  @@index([username], name: "username")
+}
+
+model books {
+  id         Int       @id @default(autoincrement())
+  title      String    @unique
+  author     String 
+  isbn       String  @unique
+  status     String    @default("available")
+  borrower   String?   @default("")
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+
+  @@index([status], name: "status")
+  @@index([borrower], name: "borrower")
+}
+
+model borrowers {
+  id         Int       @id @default(autoincrement())
+  book_id    Int
+  user_id    Int
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+
+  @@index([book_id], name: "book_id")
+  @@index([user_id], name: "user_id")
 }
