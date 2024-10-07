@@ -24,6 +24,7 @@ AuthRouter.post('/register', async (req, res) => {
         res.json(newUser.rows[0]);
     } catch (error) {
         console.error(error.message);
+        return res.status(500).json('Server Error');
     }
 }
 );
@@ -55,6 +56,7 @@ AuthRouter.post('/login', async (req, res) => {
         res.json(user.rows[0]);
     } catch (error) {
         console.error(error.message);
+        return res.status(500).json('Server Error');
     }
 });
 
