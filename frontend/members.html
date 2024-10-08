@@ -26,6 +26,13 @@
             color: white;
         }
     </style>
+    <script>
+        // Check if the user is authenticated
+        var token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = 'index.html';
+        }
+    </script>
 </head>
 
 <body>
@@ -119,10 +126,10 @@
                             <label for="editUsername" class="form-label">Username</label>
                             <input type="text" class="form-control" id="editUsername" required>
                         </div>
-                        <div class="mb-3">
+                        <!-- <div class="mb-3">
                             <label for="editPassword" class="form-label">Password</label>
                             <input type="password" class="form-control" id="editPassword" required>
-                        </div>
+                        </div> -->
                     </form>
                 </div>
                 <div class="modal-footer">
@@ -150,6 +157,36 @@
         </div>
     </div>
 
+    <!-- View History Modal -->
+    <div class="modal fade" id="viewHistoryModal" tabindex="-1" aria-labelledby="viewHistoryModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="viewHistoryModalLabel">Borrowed Books History</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <table class="table" id="historyTable">
+                        <thead>
+                            <tr>
+                                <th>Book Title</th>
+                                <th>Borrowed Date</th>
+                                <th>Return Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Borrowed books will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <footer>&copy; 2024 Library Management System</footer>
 
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
@@ -160,8 +197,10 @@
         crossorigin="anonymous"></script>
     <script>
         const apiUrl = 'https://lmsystem.vercel.app/auth';
+        const apiurl2 = 'https://lmsystem.vercel.app';
         let members = [];
         let memberToDelete = null;
+        var token = localStorage.getItem('token'); // Get the token from local storage
 
         document.addEventListener('DOMContentLoaded', () => {
             fetchMembers();
@@ -171,7 +210,12 @@
 
         async function fetchMembers() {
             try {
-                const response = await fetch(apiUrl);
+                const response = await fetch(apiUrl, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
                 members = await response.json();
                 displayMembers();
             } catch (error) {
@@ -208,7 +252,10 @@
             try {
                 const response = await fetch(`${apiUrl}/register`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
                     body: JSON.stringify(newMember),
                 });
                 if (response.ok) {
@@ -235,6 +282,9 @@
             try {
                 const response = await fetch(`${apiUrl}/${memberToDelete}`, {
                     method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
                 });
                 if (response.ok) {
                     fetchMembers(); // Refresh members list
@@ -255,7 +305,7 @@
                 // Populate the edit form with member data
                 document.getElementById('editUserId').value = member.user_id;
                 document.getElementById('editUsername').value = member.username;
-                document.getElementById('editPassword').value = member.password;
+                // document.getElementById('editPassword').value = member.password;
 
                 const modal = new bootstrap.Modal(document.getElementById('editMemberModal'));
                 modal.show();
@@ -278,7 +328,10 @@
             try {
                 const response = await fetch(`${apiUrl}/${id}`, {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
                     body: JSON.stringify(updatedMember),
                 });
                 if (response.ok) {
@@ -294,9 +347,39 @@
             }
         }
 
-        function viewHistory(id) {
-            // Navigate to the history page or implement the history viewing logic
-            window.location.href = `history.html?memberId=${id}`;
+        async function viewHistory(id) {
+            const response = await fetch(`${apiurl2}/books/borrowed/${id}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                displayHistory(data);
+            } else {
+                console.error('Failed to fetch history:', response.status);
+            }
+        }
+
+        function displayHistory(history) {
+            const historyTableBody = document.querySelector('#historyTable tbody');
+            historyTableBody.innerHTML = ''; // Clear previous data
+
+            history.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.book_title}</td>
+                    <td>${new Date(item.borrowed_date).toLocaleDateString()}</td>
+                    <td>${item.return_date ? new Date(item.return_date).toLocaleDateString() : 'Not Returned'}</td>
+                `;
+                historyTableBody.appendChild(row);
+            });
+
+            const modal = new bootstrap.Modal(document.getElementById('viewHistoryModal'));
+            modal.show();
         }
     </script>
 </body>

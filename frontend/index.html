@@ -107,6 +107,11 @@
                     toastBody.textContent = "Login successful!";
                     toast.show();
                     loginForm.reset();
+                    // Save token to localstorage
+                    const data = await response.json();
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('userrole', data.user.role);
+                    localStorage.setItem('user_id', data.user.user_id);
                     window.location.href = 'books.html';
                 } else {
                     const errorData = await response.json();
