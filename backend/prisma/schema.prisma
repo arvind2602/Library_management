@@ -8,38 +8,45 @@ datasource db {
 }
 
 model users {
-  user_id    Int       @id @default(autoincrement())
-  username   String    @unique
-  password   String    @default("")
-  role       String
-  created_at DateTime  @default(now())
-  updated_at DateTime? @updatedAt
+  user_id   Int        @id @default(autoincrement())
+  username  String     @unique
+  password  String     @default("")
+  role      String
+  createdAt DateTime   @default(now())
+  updatedAt DateTime?  @updatedAt
+  Borrowers borrower[]
 
   @@index([role], name: "role")
   @@index([username], name: "username")
 }
 
 model books {
-  id         Int       @id @default(autoincrement())
-  title      String    @unique
-  author     String 
-  isbn       String  @unique
-  status     String    @default("available")
-  borrower   String?   @default("")
-  created_at DateTime  @default(now())
-  updated_at DateTime? @updatedAt
+  id           Int        @id @default(autoincrement())
+  title        String     @unique
+  author       String
+  isbn         String     @unique
+  status       BookStatus @default(available)
+  bought_by_id Int        @default(0)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime?  @updatedAt
+  Borrowers    borrower[]
 
   @@index([status], name: "status")
-  @@index([borrower], name: "borrower")
 }
 
-model borrowers {
-  id         Int       @id @default(autoincrement())
-  book_id    Int
-  user_id    Int
-  created_at DateTime  @default(now())
-  updated_at DateTime? @updatedAt
+model borrower {
+  id        Int       @id @default(autoincrement())
+  book      books     @relation(fields: [book_id], references: [id])
+  user      users     @relation(fields: [user_id], references: [user_id])
+  book_id   Int
+  taken     DateTime  @default(now())
+  returned  DateTime?
+  user_id   Int
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+}
 
-  @@index([book_id], name: "book_id")
-  @@index([user_id], name: "user_id")
+enum BookStatus {
+  available
+  borrowed
 }
