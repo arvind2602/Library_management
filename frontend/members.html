@@ -170,7 +170,7 @@
                     <table class="table" id="historyTable">
                         <thead>
                             <tr>
-                                <th>Book Title</th>
+                                <th>Book id</th>
                                 <th>Borrowed Date</th>
                                 <th>Return Date</th>
                             </tr>
@@ -371,9 +371,9 @@
             history.forEach(item => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td>${item.book_title}</td>
-                    <td>${new Date(item.borrowed_date).toLocaleDateString()}</td>
-                    <td>${item.return_date ? new Date(item.return_date).toLocaleDateString() : 'Not Returned'}</td>
+                    <td>${item.book_id}</td>
+                    <td>${new Date(item.taken).toLocaleDateString()}</td>
+                    <td>${item.returned ? new Date(item.return_date).toLocaleDateString() : 'Not Returned'}</td>
                 `;
                 historyTableBody.appendChild(row);
             });
